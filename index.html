@@ -36,10 +36,12 @@
                         'fade-in': 'fadeIn 0.3s ease-out forwards',
                         'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'shake': 'shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both',
                     },
                     keyframes: {
                         fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
-                        slideUp: { '0%': { transform: 'translateY(20px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } }
+                        slideUp: { '0%': { transform: 'translateY(20px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } },
+                        shake: { '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' }, '20%, 80%': { transform: 'translate3d(2px, 0, 0)' }, '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' }, '40%, 60%': { transform: 'translate3d(4px, 0, 0)' } }
                     }
                 }
             }
@@ -77,8 +79,8 @@
             <div class="w-20 h-20 bg-brand-600 rounded-3xl mx-auto flex items-center justify-center mb-6 shadow-lg shadow-brand-500/30">
                 <i class="ph ph-shield-check text-4xl text-white"></i>
             </div>
-            <h1 class="text-3xl font-bold tracking-tight mb-2">DocNest</h1>
-            <p class="text-gray-500 dark:text-gray-400">Your Digital Vault</p>
+            <h1 class="text-3xl font-bold tracking-tight mb-2" id="auth-title">DocNest</h1>
+            <p class="text-gray-500 dark:text-gray-400" id="auth-subtitle">Your Digital Vault</p>
         </div>
 
         <div class="w-full max-w-xs animate-slide-up" style="animation-delay: 0.1s;">
@@ -103,7 +105,10 @@
                 <button class="pin-btn w-16 h-16 rounded-full bg-white dark:bg-gray-800 shadow-sm flex items-center justify-center mx-auto hover:bg-gray-100 dark:hover:bg-gray-700 active:scale-95 transition-all" onclick="enterPin(0)">0</button>
                 <button class="pin-btn w-16 h-16 flex items-center justify-center mx-auto text-gray-400" onclick="deletePin()"><i class="ph ph-backspace text-2xl"></i></button>
             </div>
-            <p class="text-center text-sm text-gray-500">Default PIN: 1234</p>
+            <div class="flex justify-between items-center px-4">
+                <button id="auth-cancel-btn" class="hidden text-sm text-gray-500 hover:text-gray-800 dark:hover:text-white" onclick="cancelPinChange()">Cancel</button>
+                <button class="text-sm text-brand-600 dark:text-brand-400 hover:underline mx-auto" onclick="forgotPin()">Forgot PIN?</button>
+            </div>
         </div>
     </div>
 
@@ -141,10 +146,10 @@
                 <div class="px-4 py-3 bg-gray-100 dark:bg-gray-800 rounded-xl mb-4">
                     <div class="flex justify-between text-xs mb-1">
                         <span class="font-medium text-gray-500">Storage</span>
-                        <span class="font-bold">4.2 GB / 15 GB</span>
+                        <span class="font-bold"><span id="storage-used-sidebar">0.0</span> / 15 GB</span>
                     </div>
                     <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-                        <div class="bg-brand-500 h-1.5 rounded-full" style="width: 28%"></div>
+                        <div class="bg-brand-500 h-1.5 rounded-full transition-all duration-500" id="storage-bar-sidebar" style="width: 0%"></div>
                     </div>
                 </div>
                 <button onclick="nav('settings')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" data-target="settings">
@@ -160,7 +165,7 @@
             <header class="h-16 md:h-20 flex items-center justify-between px-4 md:px-8 glass z-10 sticky top-0">
                 <div class="flex-1 max-w-2xl relative">
                     <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg"></i>
-                    <input type="text" id="global-search" placeholder="Search by name, category, or OCR text..." 
+                    <input type="text" id="global-search" placeholder="Search by name, category, or owner..." 
                            class="w-full bg-gray-100 dark:bg-gray-800 border-none rounded-full py-2.5 md:py-3 pl-10 pr-4 focus:ring-2 focus:ring-brand-500 text-sm md:text-base outline-none transition-shadow">
                 </div>
                 <div class="flex items-center gap-2 md:gap-4 ml-4">
@@ -168,11 +173,11 @@
                         <i class="ph ph-moon text-xl dark:hidden"></i>
                         <i class="ph ph-sun text-xl hidden dark:block"></i>
                     </button>
-                    <button class="w-10 h-10 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors relative">
+                    <button class="w-10 h-10 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors relative" onclick="showToast('No new notifications')">
                         <i class="ph ph-bell text-xl"></i>
-                        <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+                        <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full hidden" id="notif-badge"></span>
                     </button>
-                    <img id="header-profile-img" src="https://i.pravatar.cc/150?img=11" alt="Profile" class="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-white dark:border-gray-800 shadow-sm cursor-pointer ml-1 md:ml-0 object-cover">
+                    <img id="header-profile-img" src="https://i.pravatar.cc/150?img=11" alt="Profile" onclick="nav('settings')" class="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-white dark:border-gray-800 shadow-sm cursor-pointer ml-1 md:ml-0 object-cover hover:opacity-80 transition-opacity">
                 </div>
             </header>
 
@@ -181,8 +186,8 @@
                 
                 <!-- VIEW: DASHBOARD -->
                 <section id="view-dashboard" class="view-section px-4 md:px-8 py-6 animate-fade-in block">
-                    <h1 class="text-2xl md:text-3xl font-bold mb-1">Good evening, Rahul</h1>
-                    <p class="text-gray-500 dark:text-gray-400 mb-8">You have 3 documents expiring soon.</p>
+                    <h1 class="text-2xl md:text-3xl font-bold mb-1" id="dash-greeting">Good evening</h1>
+                    <p class="text-gray-500 dark:text-gray-400 mb-8" id="dash-subtitle">Welcome to your secure vault.</p>
 
                     <!-- Quick Actions -->
                     <div class="grid grid-cols-4 md:grid-cols-4 gap-3 md:gap-6 mb-10">
@@ -197,7 +202,7 @@
                                 <i class="ph ph-upload-simple text-2xl"></i>
                             </div>
                             <span class="text-xs md:text-sm font-medium">Upload</span>
-                            <input type="file" id="file-upload" class="hidden" multiple accept=".pdf,.jpg,.jpeg,.png">
+                            <input type="file" id="file-upload" class="hidden" multiple accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileUpload(event)">
                         </button>
                         <button onclick="nav('quick-share')" class="flex flex-col items-center justify-center p-4 bg-white dark:bg-gray-800 rounded-2xl md:rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all active:scale-95 group">
                             <div class="w-12 h-12 md:w-14 md:h-14 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mb-2 group-hover:-translate-y-1 transition-transform">
@@ -235,18 +240,18 @@
                 <section id="view-vault" class="view-section px-4 md:px-8 py-6 hidden">
                     <div class="flex items-center justify-between mb-6">
                         <h1 class="text-2xl font-bold">My Vault</h1>
-                        <button class="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-lg text-sm font-medium">
+                        <button onclick="showToast('Filter options are below')" class="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
                             <i class="ph ph-faders"></i> Filter
                         </button>
                     </div>
                     
                     <!-- Tags/Filters -->
-                    <div class="flex overflow-x-auto gap-2 pb-4 no-scrollbar mb-2">
-                        <button class="px-4 py-1.5 bg-brand-600 text-white rounded-full text-sm font-medium whitespace-nowrap">All Docs</button>
-                        <button class="px-4 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full text-sm font-medium whitespace-nowrap">Identity</button>
-                        <button class="px-4 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full text-sm font-medium whitespace-nowrap">Property</button>
-                        <button class="px-4 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full text-sm font-medium whitespace-nowrap">Medical</button>
-                        <button class="px-4 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full text-sm font-medium whitespace-nowrap">Education</button>
+                    <div class="flex overflow-x-auto gap-2 pb-4 no-scrollbar mb-2" id="vault-filter-tags">
+                        <button onclick="filterVault('all')" class="vault-filter-btn px-4 py-1.5 bg-brand-600 text-white border border-brand-600 rounded-full text-sm font-medium whitespace-nowrap transition-colors">All Docs</button>
+                        <button onclick="filterVault('id')" class="vault-filter-btn px-4 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full text-sm font-medium whitespace-nowrap transition-colors">Identity</button>
+                        <button onclick="filterVault('prop')" class="vault-filter-btn px-4 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full text-sm font-medium whitespace-nowrap transition-colors">Property</button>
+                        <button onclick="filterVault('med')" class="vault-filter-btn px-4 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full text-sm font-medium whitespace-nowrap transition-colors">Medical</button>
+                        <button onclick="filterVault('edu')" class="vault-filter-btn px-4 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full text-sm font-medium whitespace-nowrap transition-colors">Education</button>
                     </div>
 
                     <!-- List View -->
@@ -262,7 +267,7 @@
                             <h1 class="text-2xl font-bold">Family Vault</h1>
                             <p class="text-sm text-gray-500">Manage documents for your loved ones.</p>
                         </div>
-                        <button class="w-10 h-10 bg-brand-600 text-white rounded-full flex items-center justify-center shadow-lg">
+                        <button onclick="openFamilyModal()" class="w-10 h-10 bg-brand-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-brand-700 transition-colors">
                             <i class="ph ph-user-plus text-xl"></i>
                         </button>
                     </div>
@@ -308,11 +313,11 @@
                         </div>
 
                         <div class="p-8 pb-12 flex justify-between items-center bg-black/80 backdrop-blur-lg mt-auto z-30">
-                            <button class="w-12 h-12 flex items-center justify-center"><i class="ph ph-image text-white text-2xl"></i></button>
+                            <button class="w-12 h-12 flex items-center justify-center" onclick="document.getElementById('file-upload').click()"><i class="ph ph-image text-white text-2xl"></i></button>
                             <button class="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center" onclick="simulateCapture()">
                                 <div class="w-16 h-16 bg-white rounded-full active:scale-90 transition-transform"></div>
                             </button>
-                            <button class="w-12 h-12 flex items-center justify-center text-white font-medium">Batch</button>
+                            <button class="w-12 h-12 flex items-center justify-center text-white font-medium text-sm">Batch</button>
                         </div>
                     </div>
                 </section>
@@ -327,7 +332,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
                             <h3 class="font-bold mb-3 text-gray-500 uppercase text-xs tracking-wider">Blood Group & Medical</h3>
-                            <div class="flex justify-between items-center mb-2"><span class="font-medium">Rahul (Self)</span><span class="text-red-500 font-bold">O+</span></div>
+                            <div class="flex justify-between items-center mb-2"><span class="font-medium" id="em-name-self">Rahul (Self)</span><span class="text-red-500 font-bold">O+</span></div>
                             <div class="flex justify-between items-center"><span class="font-medium">Anjali (Wife)</span><span class="text-red-500 font-bold">A-</span></div>
                         </div>
                         <div class="p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
@@ -335,7 +340,7 @@
                             <div class="flex items-center gap-3 mb-2">
                                 <i class="ph ph-file-pdf text-red-500 text-2xl"></i>
                                 <div class="flex-1"><p class="font-bold text-sm">Star Health Policy</p><p class="text-xs text-gray-500">ID: SH-998231</p></div>
-                                <button class="p-2 bg-gray-100 dark:bg-gray-700 rounded-full" onclick="shareMock('Star Health Policy')"><i class="ph ph-share-network"></i></button>
+                                <button class="p-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors" onclick="triggerWebShare('Star Health Policy', 'Insurance policy details')"><i class="ph ph-share-network"></i></button>
                             </div>
                         </div>
                     </div>
@@ -364,8 +369,8 @@
                                     </div>
                                     <div class="flex-1 text-center sm:text-left">
                                         <div class="flex flex-wrap gap-2 justify-center sm:justify-start">
-                                            <button onclick="document.getElementById('profile-upload').click()" class="px-4 py-2 bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300 rounded-xl text-sm font-semibold transition-colors">Upload Photo</button>
-                                            <button onclick="removeProfilePhoto()" class="px-4 py-2 bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400 rounded-xl text-sm font-semibold transition-colors">Remove Photo</button>
+                                            <button onclick="document.getElementById('profile-upload').click()" class="px-4 py-2 bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300 rounded-xl text-sm font-semibold transition-colors hover:bg-brand-100 dark:hover:bg-brand-900/50">Upload Photo</button>
+                                            <button onclick="removeProfilePhoto()" class="px-4 py-2 bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400 rounded-xl text-sm font-semibold transition-colors hover:bg-red-100 dark:hover:bg-red-900/40">Remove Photo</button>
                                         </div>
                                         <p class="text-xs text-gray-500 mt-3">Supports JPG, PNG. Max 5MB.</p>
                                     </div>
@@ -396,26 +401,17 @@
                                     <div><p class="font-bold">Change PIN</p><p class="text-xs text-gray-500">Update your 4-digit access code</p></div>
                                     <i class="ph ph-caret-right text-gray-400"></i>
                                 </div>
-                                <div class="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors cursor-pointer">
+                                <div class="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors cursor-pointer" onclick="showToast('Password recovery link sent to email')">
                                     <div><p class="font-bold">Forgot PIN Recovery</p><p class="text-xs text-gray-500">Setup email recovery</p></div>
                                     <i class="ph ph-caret-right text-gray-400"></i>
                                 </div>
                                 <div class="flex items-center justify-between p-4 border-t border-gray-100 dark:border-gray-700 mt-2">
                                     <div><p class="font-bold">App Lock</p><p class="text-xs text-gray-500">Require PIN to open app</p></div>
-                                    <input type="checkbox" checked class="toggle-checkbox w-10 h-5 bg-brand-500 rounded-full appearance-none relative cursor-pointer after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:w-4 after:h-4 after:rounded-full after:transition-transform checked:after:translate-x-5">
+                                    <input type="checkbox" id="set-app-lock" onchange="toggleSetting('appLock', this.checked)" class="toggle-checkbox w-10 h-5 bg-brand-500 rounded-full appearance-none relative cursor-pointer after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:w-4 after:h-4 after:rounded-full after:transition-transform checked:after:translate-x-5">
                                 </div>
                                 <div class="flex items-center justify-between p-4">
                                     <div><p class="font-bold">Biometric Lock</p><p class="text-xs text-gray-500">Use Fingerprint/FaceID if available</p></div>
-                                    <input type="checkbox" checked class="toggle-checkbox w-10 h-5 bg-brand-500 rounded-full appearance-none relative cursor-pointer after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:w-4 after:h-4 after:rounded-full after:transition-transform checked:after:translate-x-5">
-                                </div>
-                                <div class="flex items-center justify-between p-4">
-                                    <div><p class="font-bold">Auto-Lock Timer</p><p class="text-xs text-gray-500">Lock app after inactivity</p></div>
-                                    <select class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm outline-none">
-                                        <option>Immediately</option>
-                                        <option>1 Minute</option>
-                                        <option selected>5 Minutes</option>
-                                        <option>15 Minutes</option>
-                                    </select>
+                                    <input type="checkbox" id="set-bio-lock" onchange="toggleSetting('bioLock', this.checked)" class="toggle-checkbox w-10 h-5 bg-brand-500 rounded-full appearance-none relative cursor-pointer after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:w-4 after:h-4 after:rounded-full after:transition-transform checked:after:translate-x-5">
                                 </div>
                             </div>
                         </div>
@@ -427,11 +423,11 @@
                                     <i class="ph ph-cloud-arrow-up text-xl text-blue-500"></i>
                                     <h2 class="font-bold text-lg">Cloud Backup</h2>
                                 </div>
-                                <span class="bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 px-3 py-1 rounded-full text-xs font-bold">Sync ON</span>
+                                <span class="bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 px-3 py-1 rounded-full text-xs font-bold" id="backup-status-badge">Sync ON</span>
                             </div>
                             <div class="p-6">
                                 <p class="text-sm font-medium mb-1">Primary Storage: <span class="text-brand-600 dark:text-brand-400 font-bold">Google Apps Script Vault</span></p>
-                                <p class="text-xs text-gray-500 mb-6">Last backup: Today, 08:30 AM</p>
+                                <p class="text-xs text-gray-500 mb-6" id="last-backup-text">Last backup: Not yet backed up</p>
                                 
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
                                     <button class="flex flex-col items-center justify-center p-4 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-brand-500 transition-colors">
@@ -444,7 +440,7 @@
                                         <span class="text-xs font-bold">GAS Backend</span>
                                         <span class="text-[10px] text-green-500 mt-1">Active</span>
                                     </button>
-                                    <button class="flex flex-col items-center justify-center p-4 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 opacity-60">
+                                    <button class="flex flex-col items-center justify-center p-4 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 opacity-60 cursor-not-allowed">
                                         <i class="ph ph-fire text-2xl mb-2 text-gray-500"></i>
                                         <span class="text-xs font-bold">Firebase</span>
                                         <span class="text-[10px] text-gray-500 mt-1">Future Ready</span>
@@ -453,14 +449,14 @@
 
                                 <div class="flex items-center justify-between mb-6">
                                     <div><p class="font-bold text-sm">Auto Backup</p><p class="text-xs text-gray-500">Sync changes automatically</p></div>
-                                    <input type="checkbox" checked class="toggle-checkbox w-10 h-5 bg-brand-500 rounded-full appearance-none relative cursor-pointer after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:w-4 after:h-4 after:rounded-full after:transition-transform checked:after:translate-x-5">
+                                    <input type="checkbox" id="set-auto-backup" onchange="toggleSetting('autoBackup', this.checked)" class="toggle-checkbox w-10 h-5 bg-brand-500 rounded-full appearance-none relative cursor-pointer after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:w-4 after:h-4 after:rounded-full after:transition-transform checked:after:translate-x-5">
                                 </div>
 
                                 <div class="flex flex-wrap gap-3">
-                                    <button class="px-5 py-2.5 bg-brand-600 text-white rounded-xl text-sm font-bold shadow-md hover:bg-brand-700 transition-colors flex items-center gap-2">
+                                    <button onclick="executeBackup()" class="px-5 py-2.5 bg-brand-600 text-white rounded-xl text-sm font-bold shadow-md hover:bg-brand-700 transition-colors flex items-center gap-2">
                                         <i class="ph ph-cloud-arrow-up"></i> Backup Now
                                     </button>
-                                    <button class="px-5 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-bold shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2">
+                                    <button onclick="executeRestore()" class="px-5 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-bold shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2">
                                         <i class="ph ph-clock-counter-clockwise"></i> Restore Backup
                                     </button>
                                 </div>
@@ -475,113 +471,41 @@
                             </div>
                             <div class="p-6">
                                 <div class="flex justify-between items-end mb-2">
-                                    <div><p class="text-3xl font-bold">4.2 <span class="text-lg text-gray-500 font-medium">GB</span></p><p class="text-xs text-gray-500">Used of 15 GB</p></div>
-                                    <p class="text-sm font-semibold text-gray-600 dark:text-gray-300">10.8 GB Free</p>
+                                    <div><p class="text-3xl font-bold"><span id="storage-used-main">0.0</span> <span class="text-lg text-gray-500 font-medium">MB</span></p><p class="text-xs text-gray-500">Used of 50 MB (Local Quota)</p></div>
+                                    <p class="text-sm font-semibold text-gray-600 dark:text-gray-300" id="storage-free-main">50 MB Free</p>
                                 </div>
                                 <div class="w-full h-3 bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden flex mb-6 shadow-inner">
-                                    <div class="h-full bg-red-500" style="width: 15%"></div>
-                                    <div class="h-full bg-blue-500" style="width: 10%"></div>
-                                    <div class="h-full bg-brand-500" style="width: 3%"></div>
+                                    <div class="h-full bg-red-500 transition-all duration-500" id="storage-bar-pdf" style="width: 0%"></div>
+                                    <div class="h-full bg-blue-500 transition-all duration-500" id="storage-bar-img" style="width: 0%"></div>
+                                    <div class="h-full bg-brand-500 transition-all duration-500" id="storage-bar-other" style="width: 0%"></div>
                                 </div>
                                 
                                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <div class="flex items-center gap-3"><div class="w-3 h-3 rounded-full bg-red-500"></div><div><p class="text-xs font-bold">PDFs</p><p class="text-[10px] text-gray-500">2.1 GB</p></div></div>
-                                    <div class="flex items-center gap-3"><div class="w-3 h-3 rounded-full bg-blue-500"></div><div><p class="text-xs font-bold">Images</p><p class="text-[10px] text-gray-500">1.4 GB</p></div></div>
-                                    <div class="flex items-center gap-3"><div class="w-3 h-3 rounded-full bg-brand-500"></div><div><p class="text-xs font-bold">Other Docs</p><p class="text-[10px] text-gray-500">0.7 GB</p></div></div>
-                                    <div class="flex items-center gap-3"><div class="w-3 h-3 rounded-full bg-gray-200 dark:bg-gray-700"></div><div><p class="text-xs font-bold">Free</p><p class="text-[10px] text-gray-500">10.8 GB</p></div></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Family -->
-                        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-                                <div class="flex items-center gap-2">
-                                    <i class="ph ph-users text-xl text-orange-500"></i>
-                                    <h2 class="font-bold text-lg">Manage Family</h2>
-                                </div>
-                                <button class="text-brand-600 dark:text-brand-400 font-bold text-sm hover:underline flex items-center gap-1"><i class="ph ph-plus"></i> Add Member</button>
-                            </div>
-                            <div class="p-2">
-                                <div class="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors">
-                                    <div class="flex items-center gap-3">
-                                        <img src="https://i.pravatar.cc/150?img=5" class="w-10 h-10 rounded-full">
-                                        <div><p class="font-bold text-sm">Anjali Sharma</p><p class="text-xs text-gray-500">Wife • 22 Docs</p></div>
-                                    </div>
-                                    <div class="flex gap-2">
-                                        <button class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300"><i class="ph ph-pencil-simple"></i></button>
-                                        <button class="w-8 h-8 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center text-red-500"><i class="ph ph-trash"></i></button>
-                                    </div>
-                                </div>
-                                <div class="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors">
-                                    <div class="flex items-center gap-3">
-                                        <img src="https://i.pravatar.cc/150?img=12" class="w-10 h-10 rounded-full">
-                                        <div><p class="font-bold text-sm">Ramesh Sharma</p><p class="text-xs text-gray-500">Father • 18 Docs</p></div>
-                                    </div>
-                                    <div class="flex gap-2">
-                                        <button class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300"><i class="ph ph-pencil-simple"></i></button>
-                                        <button class="w-8 h-8 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center text-red-500"><i class="ph ph-trash"></i></button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Notifications -->
-                        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
-                                <i class="ph ph-bell-ringing text-xl text-yellow-500"></i>
-                                <h2 class="font-bold text-lg">Notifications</h2>
-                            </div>
-                            <div class="p-2">
-                                <div class="flex items-center justify-between p-4">
-                                    <div><p class="font-bold">Document Expiry Alerts</p><p class="text-xs text-gray-500">Reminders for passport, licenses, policies</p></div>
-                                    <input type="checkbox" checked class="toggle-checkbox w-10 h-5 bg-brand-500 rounded-full appearance-none relative cursor-pointer after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:w-4 after:h-4 after:rounded-full after:transition-transform checked:after:translate-x-5">
-                                </div>
-                                <div class="flex items-center justify-between p-4">
-                                    <div><p class="font-bold">Backup Reminders</p><p class="text-xs text-gray-500">If cloud sync fails or is disabled</p></div>
-                                    <input type="checkbox" checked class="toggle-checkbox w-10 h-5 bg-brand-500 rounded-full appearance-none relative cursor-pointer after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:w-4 after:h-4 after:rounded-full after:transition-transform checked:after:translate-x-5">
-                                </div>
-                                <div class="flex items-center justify-between p-4">
-                                    <div><p class="font-bold">Family Vault Updates</p><p class="text-xs text-gray-500">When family docs are updated</p></div>
-                                    <input type="checkbox" checked class="toggle-checkbox w-10 h-5 bg-brand-500 rounded-full appearance-none relative cursor-pointer after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:w-4 after:h-4 after:rounded-full after:transition-transform checked:after:translate-x-5">
+                                    <div class="flex items-center gap-3"><div class="w-3 h-3 rounded-full bg-red-500"></div><div><p class="text-xs font-bold">PDFs</p><p class="text-[10px] text-gray-500" id="stat-pdf">0 MB</p></div></div>
+                                    <div class="flex items-center gap-3"><div class="w-3 h-3 rounded-full bg-blue-500"></div><div><p class="text-xs font-bold">Images</p><p class="text-[10px] text-gray-500" id="stat-img">0 MB</p></div></div>
+                                    <div class="flex items-center gap-3"><div class="w-3 h-3 rounded-full bg-brand-500"></div><div><p class="text-xs font-bold">Other Docs</p><p class="text-[10px] text-gray-500" id="stat-other">0 MB</p></div></div>
+                                    <div class="flex items-center gap-3"><div class="w-3 h-3 rounded-full bg-gray-200 dark:bg-gray-700"></div><div><p class="text-xs font-bold">Free</p><p class="text-[10px] text-gray-500" id="stat-free">50 MB</p></div></div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Export & Import -->
-                        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden mb-8">
                             <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
                                 <i class="ph ph-export text-xl text-teal-500"></i>
                                 <h2 class="font-bold text-lg">Data Portability</h2>
                             </div>
                             <div class="p-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <button class="flex flex-col items-center justify-center p-4 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                                <button onclick="exportData('zip')" class="flex flex-col items-center justify-center p-4 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                                     <i class="ph ph-file-zip text-2xl mb-2"></i><span class="font-bold text-sm">Export ZIP</span>
                                 </button>
-                                <button class="flex flex-col items-center justify-center p-4 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                                <button onclick="exportData('pdf')" class="flex flex-col items-center justify-center p-4 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                                     <i class="ph ph-file-pdf text-2xl mb-2 text-red-500"></i><span class="font-bold text-sm">Export All PDF</span>
                                 </button>
-                                <button class="flex flex-col items-center justify-center p-4 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                                <button onclick="document.getElementById('import-upload').click()" class="flex flex-col items-center justify-center p-4 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                                     <i class="ph ph-upload-simple text-2xl mb-2 text-brand-500"></i><span class="font-bold text-sm">Import Backup</span>
+                                    <input type="file" id="import-upload" class="hidden" accept=".json" onchange="importData(event)">
                                 </button>
-                            </div>
-                        </div>
-
-                        <!-- About -->
-                        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden mb-8">
-                            <div class="p-2">
-                                <div class="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors cursor-pointer">
-                                    <p class="font-bold">DocNest Version</p><p class="text-sm text-gray-500 font-mono">v1.2.0 (Production)</p>
-                                </div>
-                                <div class="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors cursor-pointer">
-                                    <p class="font-bold">Privacy Policy</p><i class="ph ph-caret-right text-gray-400"></i>
-                                </div>
-                                <div class="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors cursor-pointer">
-                                    <p class="font-bold">Terms of Service</p><i class="ph ph-caret-right text-gray-400"></i>
-                                </div>
-                                <div class="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors cursor-pointer">
-                                    <p class="font-bold">Help & Support</p><i class="ph ph-caret-right text-gray-400"></i>
-                                </div>
                             </div>
                         </div>
 
@@ -630,26 +554,41 @@
             <div class="px-4 md:px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between sticky top-0 bg-white dark:bg-gray-900 rounded-t-3xl z-10">
                 <div class="flex items-center gap-3">
                     <div id="modal-doc-icon" class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xl"></div>
-                    <div>
-                        <h2 id="modal-doc-title" class="font-bold text-lg leading-tight truncate max-w-[200px] md:max-w-xs">Document Name</h2>
-                        <p id="modal-doc-meta" class="text-xs text-gray-500">PDF • 1.2 MB • Added Oct 12</p>
+                    <div class="min-w-0 max-w-[200px] md:max-w-xs flex flex-col items-start group relative">
+                        <h2 id="modal-doc-title" class="font-bold text-lg leading-tight truncate w-full cursor-text" onclick="initiateDocRename()">Document Name</h2>
+                        <i class="ph ph-pencil-simple absolute -right-5 top-1 opacity-0 group-hover:opacity-100 text-gray-400 cursor-pointer" onclick="initiateDocRename()"></i>
+                        <p id="modal-doc-meta" class="text-xs text-gray-500 truncate w-full">PDF • 1.2 MB • Added Oct 12</p>
                     </div>
                 </div>
-                <button onclick="closeDocModal()" class="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700">
-                    <i class="ph ph-x"></i>
-                </button>
+                <div class="flex items-center gap-1">
+                    <button onclick="togglePinCurrentDoc()" id="modal-pin-btn" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                        <i class="ph ph-push-pin text-gray-400"></i>
+                    </button>
+                    <button onclick="confirmDeleteDoc()" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 transition-colors">
+                        <i class="ph ph-trash"></i>
+                    </button>
+                    <button onclick="closeDocModal()" class="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 ml-2">
+                        <i class="ph ph-x"></i>
+                    </button>
+                </div>
             </div>
 
             <!-- Modal Body (Preview & Details) -->
             <div class="flex-1 overflow-y-auto p-4 md:px-6 no-scrollbar">
                 
                 <!-- Simulated Preview -->
-                <div class="w-full aspect-[1/1.4] bg-gray-100 dark:bg-gray-800 rounded-xl mb-6 relative overflow-hidden flex items-center justify-center border border-gray-200 dark:border-gray-700 shadow-inner">
-                    <i class="ph ph-file-pdf text-6xl text-gray-300 dark:text-gray-600"></i>
+                <div class="w-full aspect-[1/1.4] bg-gray-100 dark:bg-gray-800 rounded-xl mb-6 relative overflow-hidden flex items-center justify-center border border-gray-200 dark:border-gray-700 shadow-inner group cursor-pointer" onclick="downloadCurrentDoc()">
+                    <i id="modal-preview-icon" class="ph ph-file-pdf text-6xl text-gray-300 dark:text-gray-600"></i>
+                    <img id="modal-preview-img" class="hidden absolute inset-0 w-full h-full object-cover">
                     <div class="absolute inset-0 bg-gradient-to-tr from-black/5 to-transparent"></div>
+                    
+                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px]">
+                        <span class="bg-white text-gray-900 font-bold px-4 py-2 rounded-full text-sm shadow-lg flex items-center gap-2"><i class="ph ph-download-simple"></i> Click to Download</span>
+                    </div>
+
                     <!-- Smart OCR Tags overlaid -->
-                    <div class="absolute bottom-3 left-3 flex gap-2">
-                        <span class="bg-black/50 backdrop-blur text-white text-[10px] px-2 py-1 rounded-full flex items-center gap-1"><i class="ph ph-scan text-green-400"></i> Smart Detected</span>
+                    <div class="absolute bottom-3 left-3 flex gap-2 z-10 pointer-events-none">
+                        <span class="bg-black/60 backdrop-blur text-white text-[10px] px-2 py-1 rounded-full flex items-center gap-1"><i class="ph ph-scan text-green-400"></i> Smart Detected</span>
                     </div>
                 </div>
 
@@ -657,8 +596,9 @@
                 <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Extracted Details (AI)</h3>
                 <div class="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 mb-6 space-y-3 border border-gray-100 dark:border-gray-700">
                     <div class="flex justify-between items-center"><span class="text-sm text-gray-500">Document Type</span><span class="text-sm font-medium" id="modal-type">Aadhaar Card</span></div>
-                    <div class="flex justify-between items-center"><span class="text-sm text-gray-500">Name</span><span class="text-sm font-medium" id="modal-owner-name">Rahul Sharma</span></div>
-                    <div class="flex justify-between items-center"><span class="text-sm text-gray-500">ID Number</span><span class="text-sm font-medium font-mono" id="modal-id-num">**** **** 9082</span></div>
+                    <div class="flex justify-between items-center"><span class="text-sm text-gray-500">Owner</span><span class="text-sm font-medium" id="modal-owner-name">Rahul Sharma</span></div>
+                    <div class="flex justify-between items-center"><span class="text-sm text-gray-500">Category</span><span class="text-sm font-medium" id="modal-cat-name">Identity</span></div>
+                    <div class="flex justify-between items-center"><span class="text-sm text-gray-500">ID Number</span><span class="text-sm font-medium font-mono text-brand-600 dark:text-brand-400" id="modal-id-num">**** **** 9082</span></div>
                 </div>
 
                 <!-- Tags -->
@@ -669,49 +609,170 @@
 
             <!-- Modal Footer Actions -->
             <div class="p-4 md:p-6 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 rounded-b-3xl grid grid-cols-4 gap-2">
-                <button class="flex flex-col items-center justify-center p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors">
+                <button onclick="printCurrentDoc()" class="flex flex-col items-center justify-center p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors">
                     <i class="ph ph-printer text-xl mb-1"></i><span class="text-[10px] font-medium">Print</span>
                 </button>
-                <button class="flex flex-col items-center justify-center p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors">
+                <button onclick="downloadCurrentDoc()" class="flex flex-col items-center justify-center p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors">
                     <i class="ph ph-download-simple text-xl mb-1"></i><span class="text-[10px] font-medium">Save</span>
                 </button>
-                <button class="flex flex-col items-center justify-center p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors">
+                <button onclick="shareCurrentDoc('whatsapp')" class="flex flex-col items-center justify-center p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors">
                     <i class="ph ph-whatsapp-logo text-xl mb-1 text-green-500"></i><span class="text-[10px] font-medium">WhatsApp</span>
                 </button>
-                <button onclick="shareCurrentDoc()" class="flex flex-col items-center justify-center p-2 rounded-xl bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 hover:bg-brand-100 transition-colors">
+                <button onclick="shareCurrentDoc('system')" class="flex flex-col items-center justify-center p-2 rounded-xl bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 hover:bg-brand-100 dark:hover:bg-brand-900/50 transition-colors">
                     <i class="ph ph-share-network text-xl mb-1"></i><span class="text-[10px] font-bold">Share</span>
                 </button>
             </div>
         </div>
     </div>
 
+    <!-- Generic Input Modal (Rename, etc) -->
+    <div id="input-modal" class="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center hidden opacity-0 transition-opacity duration-200 px-4">
+        <div class="bg-white dark:bg-gray-900 w-full max-w-sm rounded-3xl shadow-2xl p-6 transform scale-95 transition-transform duration-200" id="input-modal-content">
+            <h3 class="text-lg font-bold mb-2" id="input-modal-title">Enter Value</h3>
+            <input type="text" id="input-modal-field" class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 outline-none focus:border-brand-500 mb-6">
+            <div class="flex justify-end gap-3">
+                <button onclick="closeInputModal()" class="px-4 py-2 rounded-xl font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">Cancel</button>
+                <button id="input-modal-confirm" class="px-4 py-2 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-700 transition-colors">Save</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Generic Confirm Modal (Delete) -->
+    <div id="confirm-modal" class="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center hidden opacity-0 transition-opacity duration-200 px-4">
+        <div class="bg-white dark:bg-gray-900 w-full max-w-sm rounded-3xl shadow-2xl p-6 text-center transform scale-95 transition-transform duration-200" id="confirm-modal-content">
+            <div class="w-16 h-16 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl"><i class="ph ph-warning-circle"></i></div>
+            <h3 class="text-xl font-bold mb-2" id="confirm-modal-title">Delete Document?</h3>
+            <p class="text-gray-500 dark:text-gray-400 text-sm mb-6" id="confirm-modal-msg">This action cannot be undone.</p>
+            <div class="flex gap-3">
+                <button onclick="closeConfirmModal()" class="flex-1 py-3 rounded-xl font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">Cancel</button>
+                <button id="confirm-modal-btn" class="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition-colors">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Family Member Edit Modal -->
+    <div id="family-modal" class="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex flex-col items-center justify-end md:justify-center hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white dark:bg-gray-900 w-full md:w-[500px] max-h-[90vh] rounded-t-3xl md:rounded-3xl shadow-2xl flex flex-col transform translate-y-full md:translate-y-8 transition-transform duration-300" id="family-modal-content">
+            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                <h2 class="font-bold text-lg" id="family-modal-title">Add Family Member</h2>
+                <button onclick="closeFamilyModal()" class="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto">
+                <div class="flex items-center gap-4 mb-6">
+                    <img id="fam-mod-img" src="https://i.pravatar.cc/150?img=1" class="w-20 h-20 rounded-full border-4 border-gray-50 dark:border-gray-800 object-cover">
+                    <button onclick="document.getElementById('fam-photo-upload').click()" class="text-sm font-semibold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/30 px-4 py-2 rounded-xl">Change Photo</button>
+                    <input type="file" id="fam-photo-upload" class="hidden" accept="image/*" onchange="handleFamPhotoUpload(event)">
+                </div>
+                <div class="space-y-4">
+                    <input type="hidden" id="fam-mod-id">
+                    <div><label class="block text-xs font-semibold text-gray-500 mb-1">Full Name</label><input type="text" id="fam-mod-name" placeholder="E.g. Ramesh Sharma" class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 outline-none focus:border-brand-500"></div>
+                    <div><label class="block text-xs font-semibold text-gray-500 mb-1">Relationship</label>
+                        <select id="fam-mod-rel" class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 outline-none focus:border-brand-500">
+                            <option value="Spouse">Spouse</option>
+                            <option value="Father">Father</option>
+                            <option value="Mother">Mother</option>
+                            <option value="Son">Son</option>
+                            <option value="Daughter">Daughter</option>
+                            <option value="Sibling">Sibling</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3">
+                <button onclick="closeFamilyModal()" class="px-6 py-2.5 rounded-xl font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700">Cancel</button>
+                <button onclick="saveFamilyMember()" class="px-6 py-2.5 rounded-xl font-bold bg-brand-600 text-white hover:bg-brand-700 shadow-md">Save Member</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Notification Toast -->
-    <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-4 py-2 rounded-full shadow-lg text-sm font-medium z-[100] transform -translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-2">
-        <i class="ph ph-check-circle text-green-400 text-lg"></i>
+    <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-5 py-3 rounded-full shadow-lg text-sm font-bold z-[100] transform -translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-3">
+        <i class="ph ph-info text-brand-400 dark:text-brand-600 text-lg"></i>
         <span id="toast-msg">Action successful</span>
     </div>
 
-    <!-- 4. APPLICATION LOGIC & DATA -->
+    <!-- 4. APPLICATION LOGIC, DATA, & GOOGLE APPS SCRIPT ARCHITECTURE -->
     <script>
-        // --- DATA MOCKS & LOCAL STORAGE STATE ---
-        // Initialize dynamic user data structure replacing hardcoded strings.
-        const defaultUser = { 
-            name: 'Rahul Sharma', 
-            email: 'rahul.s@example.com',
-            phone: '+91 9876543210',
-            dob: '1990-05-15',
-            address: 'Pune, Maharashtra',
-            profession: 'Software Engineer',
-            pin: '1234', 
-            avatar: 'https://i.pravatar.cc/150?img=11'
+        // ==========================================
+        // 1. NAMESPACED ARCHITECTURE (MOCK GAS INTEGRATION)
+        // Prepared strictly for future backend integration.
+        // ==========================================
+
+        const DocNestConfig = {
+            apiEndpoint: 'https://script.google.com/macros/s/YOUR_GAS_ID/exec',
+            driveFolderId: 'YOUR_DRIVE_FOLDER_ID',
+            sheetName: 'DocNestData',
+            environment: 'production',
+            version: '1.2.0'
         };
-        
-        let currentUser = JSON.parse(localStorage.getItem('docnest_user')) || defaultUser;
-        
-        function saveUserData() {
-            localStorage.setItem('docnest_user', JSON.stringify(currentUser));
-            updateProfileUI();
-        }
+
+        const DocNestAPI = {
+            async fetchGAS(action, payload = {}) {
+                // Future Implementation:
+                // const response = await fetch(`${DocNestConfig.apiEndpoint}?action=${action}`, { method: 'POST', body: JSON.stringify(payload) });
+                // return await response.json();
+                console.log(`[API Mocked Call] Action: ${action}`, payload);
+                return { success: true, timestamp: Date.now() };
+            }
+        };
+
+        const DocNestAuth = {
+            async verifyPin(pin) { return await DocNestAPI.fetchGAS('verifyPin', { pin }); },
+            async updatePin(oldPin, newPin) { return await DocNestAPI.fetchGAS('updatePin', { oldPin, newPin }); }
+        };
+
+        const DocNestDrive = {
+            async uploadFile(base64, filename, mimeType) { return await DocNestAPI.fetchGAS('uploadToDrive', { file: base64, name: filename, mime: mimeType }); },
+            async deleteFile(fileId) { return await DocNestAPI.fetchGAS('deleteFromDrive', { id: fileId }); }
+        };
+
+        const DocNestProfile = {
+            async getProfile() { return await DocNestAPI.fetchGAS('getProfile'); },
+            async saveProfile(profile) { return await DocNestAPI.fetchGAS('saveProfile', profile); }
+        };
+
+        const DocNestFamily = {
+            async getMembers() { return await DocNestAPI.fetchGAS('getFamily'); },
+            async addMember(data) { return await DocNestAPI.fetchGAS('addFamily', data); },
+            async updateMember(id, data) { return await DocNestAPI.fetchGAS('updateFamily', { id, data }); },
+            async deleteMember(id) { return await DocNestAPI.fetchGAS('deleteFamily', { id }); }
+        };
+
+        const DocNestDocuments = {
+            async getDocs() { return await DocNestAPI.fetchGAS('getDocuments'); },
+            async saveDoc(doc) { return await DocNestAPI.fetchGAS('saveDocument', doc); },
+            async deleteDoc(id) { return await DocNestAPI.fetchGAS('deleteDocument', { id }); }
+        };
+
+        const DocNestSettings = {
+            async syncBackup(localData) { return await DocNestAPI.fetchGAS('syncBackup', { data: localData }); }
+        };
+
+        // ==========================================
+        // 2. LOCAL STORAGE ENGINE & STATE MANAGEMENT
+        // ==========================================
+
+        const defaultUser = { 
+            name: 'Rahul Sharma', email: 'rahul.s@example.com', phone: '+91 9876543210',
+            dob: '1990-05-15', address: 'Pune, Maharashtra', profession: 'Software Engineer',
+            pin: '1234', avatar: 'https://i.pravatar.cc/150?img=11'
+        };
+
+        const defaultFamilyMembers = [
+            { id: 'self', name: 'Rahul Sharma', relation: 'Self', img: 'https://i.pravatar.cc/150?img=11' },
+            { id: 'f1', name: 'Anjali Sharma', relation: 'Spouse', img: 'https://i.pravatar.cc/150?img=5' },
+            { id: 'f2', name: 'Ramesh Sharma', relation: 'Father', img: 'https://i.pravatar.cc/150?img=12' }
+        ];
+
+        // Seed some mock documents if none exist
+        const seedDocuments = [
+            { id: 'doc1', title: 'Aadhaar Card - Rahul', cat: 'id', owner: 'self', type: 'pdf', size: 1200000, date: new Date('2023-10-12').toISOString(), pinned: true, num: '**** **** 9082', tags: ['gov', 'id proof'], dataUrl: '' },
+            { id: 'doc4', title: '7/12 Extract Pune', cat: 'prop', owner: 'f2', type: 'pdf', size: 3100000, date: new Date('2024-03-22').toISOString(), pinned: true, num: 'Survey No. 45/2', tags: ['land'], dataUrl: '' },
+            { id: 'doc6', title: 'Car Insurance HDFC', cat: 'veh', owner: 'self', type: 'jpg', size: 1800000, date: new Date('2023-11-01').toISOString(), pinned: false, num: 'POL-332991', tags: ['expiry-soon'], dataUrl: '' }
+        ];
+
+        const defaultSettings = { appLock: true, bioLock: true, autoBackup: true };
 
         const categories = [
             { id: 'id', name: 'Identity', icon: 'ph-identification-card', color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/30' },
@@ -724,38 +785,52 @@
             { id: 'other', name: 'Others', icon: 'ph-dots-three-circle', color: 'text-gray-500', bg: 'bg-gray-50 dark:bg-gray-800' }
         ];
 
-        const familyMembers = [
-            { id: 'self', name: 'Rahul Sharma', relation: 'Self', docs: 45, img: 'https://i.pravatar.cc/150?img=11' },
-            { id: 'f1', name: 'Anjali Sharma', relation: 'Wife', docs: 22, img: 'https://i.pravatar.cc/150?img=5' },
-            { id: 'f2', name: 'Ramesh Sharma', relation: 'Father', docs: 18, img: 'https://i.pravatar.cc/150?img=12' },
-            { id: 'f3', name: 'Sunita Sharma', relation: 'Mother', docs: 15, img: 'https://i.pravatar.cc/150?img=9' },
-            { id: 'f4', name: 'Aryan Sharma', relation: 'Son', docs: 5, img: 'https://i.pravatar.cc/150?img=15' }
-        ];
+        const AppStorage = {
+            get(key, fallback) {
+                const data = localStorage.getItem(`docnest_${key}`);
+                return data ? JSON.parse(data) : fallback;
+            },
+            set(key, data) {
+                localStorage.setItem(`docnest_${key}`, JSON.stringify(data));
+            },
+            clear() { localStorage.clear(); }
+        };
 
-        const documents = [
-            { id: 'doc1', title: 'Aadhaar Card - Rahul', cat: 'id', owner: 'self', type: 'pdf', size: '1.2 MB', date: 'Oct 12, 2023', pinned: true, num: '**** **** 9082', tags: ['gov', 'id proof'] },
-            { id: 'doc2', title: 'PAN Card - Rahul', cat: 'id', owner: 'self', type: 'jpg', size: '800 KB', date: 'Sep 05, 2023', pinned: true, num: 'ABCDE1234F', tags: ['tax', 'id proof'] },
-            { id: 'doc3', title: 'Degree Certificate B.Tech', cat: 'edu', owner: 'self', type: 'pdf', size: '2.5 MB', date: 'Jan 15, 2022', pinned: false, num: 'UNI-88219', tags: ['college', 'engineering'] },
-            { id: 'doc4', title: '7/12 Extract Pune', cat: 'prop', owner: 'f2', type: 'pdf', size: '3.1 MB', date: 'Mar 22, 2024', pinned: true, num: 'Survey No. 45/2', tags: ['land', 'maharashtra'] },
-            { id: 'doc5', title: 'Blood Report - Anjali', cat: 'med', owner: 'f1', type: 'pdf', size: '1.5 MB', date: 'May 10, 2024', pinned: false, num: 'LAB-9921', tags: ['health', 'recent'] },
-            { id: 'doc6', title: 'Car Insurance HDFC', cat: 'veh', owner: 'self', type: 'pdf', size: '1.8 MB', date: 'Nov 01, 2023', pinned: false, num: 'POL-332991', tags: ['swift', 'expiry-soon'] },
-            { id: 'doc7', title: 'Passport - Ramesh', cat: 'id', owner: 'f2', type: 'jpg', size: '1.1 MB', date: 'Aug 14, 2020', pinned: false, num: 'Z8829102', tags: ['travel'] },
-            { id: 'doc8', title: 'Electricity Bill May', cat: 'other', owner: 'self', type: 'pdf', size: '400 KB', date: 'May 05, 2024', pinned: false, num: 'MSEDCL-112', tags: ['utility', 'home'] },
-        ];
-
-        let currentDoc = null; // For modal
+        // Initialize State
+        let currentUser = AppStorage.get('user', defaultUser);
+        let familyMembers = AppStorage.get('family', defaultFamilyMembers);
+        let documents = AppStorage.get('docs', seedDocuments);
+        let userSettings = AppStorage.get('settings', defaultSettings);
+        
+        let currentDoc = null; 
         let pinInput = "";
         let isChangingPin = false;
+        let activeVaultFilter = 'all';
 
-        // --- AUTH LOGIC (Simulated) ---
+        function syncAllState() {
+            AppStorage.set('user', currentUser);
+            AppStorage.set('family', familyMembers);
+            AppStorage.set('docs', documents);
+            AppStorage.set('settings', userSettings);
+            
+            updateProfileUI();
+            renderDashboard();
+            renderVault(document.getElementById('global-search').value);
+            renderFamily();
+            renderQuickShare();
+            updateStorageStats();
+        }
+
+        // ==========================================
+        // 3. AUTHENTICATION & PIN
+        // ==========================================
+        
         function enterPin(num) {
             if (pinInput.length < 4) {
                 pinInput += num;
                 updatePinUI();
             }
-            if (pinInput.length === 4) {
-                setTimeout(verifyPin, 300);
-            }
+            if (pinInput.length === 4) setTimeout(verifyPin, 200);
         }
 
         function deletePin() {
@@ -778,124 +853,162 @@
 
         function verifyPin() {
             if(isChangingPin) {
-                // Handling PIN Change Flow
-                if(pinInput.length === 4) {
-                    currentUser.pin = pinInput;
-                    saveUserData();
-                    showToast('PIN Successfully Changed');
-                    isChangingPin = false;
+                currentUser.pin = pinInput;
+                syncAllState();
+                showToast('PIN Successfully Changed');
+                resetAuthScreen();
+                // If we were unlocking, unlock app. If already in app, just hide.
+                if(!document.getElementById('main-app').classList.contains('hidden')) {
                     document.getElementById('auth-screen').classList.add('hidden');
-                    pinInput = "";
-                    updatePinUI();
+                } else {
+                    unlockApp();
                 }
                 return;
             }
 
-            // Normal Unlock Flow loaded securely from storage instead of hardcode
             if (pinInput === currentUser.pin) {
                 unlockApp();
             } else {
-                showToast('Incorrect PIN');
-                pinInput = "";
-                updatePinUI();
-                const pinBox = document.getElementById('pin-indicators');
-                pinBox.classList.add('animate-[pulse_0.2s_3]'); // Shake effect simulation
-                setTimeout(() => pinBox.classList.remove('animate-[pulse_0.2s_3]'), 600);
+                handleFailedPin();
             }
         }
 
+        function handleFailedPin() {
+            showToast('Incorrect PIN');
+            pinInput = "";
+            updatePinUI();
+            const pinBox = document.getElementById('pin-indicators');
+            pinBox.classList.add('animate-shake');
+            setTimeout(() => pinBox.classList.remove('animate-shake'), 400);
+        }
+
         function triggerBiometric() {
-            showToast('Biometric Auth Successful');
-            setTimeout(unlockApp, 500);
+            if(userSettings.bioLock) {
+                showToast('Biometric Auth Successful');
+                setTimeout(unlockApp, 500);
+            } else {
+                showToast('Biometrics disabled in settings');
+            }
         }
 
         function unlockApp() {
             const authScreen = document.getElementById('auth-screen');
-            const mainApp = document.getElementById('main-app');
-            
             authScreen.style.opacity = '0';
             setTimeout(() => {
                 authScreen.classList.add('hidden');
-                mainApp.classList.remove('hidden');
-                initApp(); // Load data
-            }, 500);
+                document.getElementById('main-app').classList.remove('hidden');
+                initApp();
+            }, 300);
         }
 
-        // --- CORE LOGIC & RENDERING ---
-        
-        function getCatDetails(catId) {
-            return categories.find(c => c.id === catId) || categories[7];
-        }
-        function getOwnerDetails(ownerId) {
-            return familyMembers.find(m => m.id === ownerId) || familyMembers[0];
+        function initiatePinChange() {
+            const pinScreen = document.getElementById('auth-screen');
+            document.getElementById('auth-title').innerText = "Enter New PIN";
+            document.getElementById('auth-subtitle').innerText = "Set a new 4-digit access code";
+            document.getElementById('auth-cancel-btn').classList.remove('hidden');
+            
+            isChangingPin = true;
+            pinInput = "";
+            updatePinUI();
+            
+            pinScreen.classList.remove('hidden');
+            // Force reflow
+            void pinScreen.offsetWidth;
+            pinScreen.style.opacity = '1';
         }
 
+        function cancelPinChange() {
+            resetAuthScreen();
+            document.getElementById('auth-screen').classList.add('hidden');
+        }
+
+        function resetAuthScreen() {
+            isChangingPin = false;
+            pinInput = "";
+            updatePinUI();
+            document.getElementById('auth-title').innerText = "DocNest";
+            document.getElementById('auth-subtitle').innerText = "Your Digital Vault";
+            document.getElementById('auth-cancel-btn').classList.add('hidden');
+        }
+
+        function forgotPin() {
+            showToast('Recovery instructions sent to ' + currentUser.email);
+        }
+
+        // ==========================================
+        // 4. CORE UI RENDERING
+        // ==========================================
+
+        function getCatDetails(catId) { return categories.find(c => c.id === catId) || categories[7]; }
+        function getOwnerDetails(ownerId) { return familyMembers.find(m => m.id === ownerId) || familyMembers[0]; }
         function getFileIcon(type) {
-            if(type === 'pdf') return 'ph-file-pdf text-red-500';
-            if(['jpg','jpeg','png'].includes(type)) return 'ph-image text-blue-500';
+            if(type.includes('pdf')) return 'ph-file-pdf text-red-500';
+            if(type.includes('image') || ['jpg','jpeg','png'].includes(type)) return 'ph-image text-blue-500';
             return 'ph-file text-gray-500';
+        }
+        function formatBytes(bytes, decimals = 2) {
+            if (!+bytes) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+        }
+        function formatDate(isoString) {
+            const opts = { month: 'short', day: 'numeric', year: 'numeric' };
+            return new Date(isoString).toLocaleDateString('en-US', opts);
         }
 
         function initApp() {
-            renderDashboard();
-            renderVault();
-            renderFamily();
-            renderQuickShare();
-            updateProfileUI(); // Sync UI with Loaded User Data
+            // Apply Settings
+            document.getElementById('set-app-lock').checked = userSettings.appLock;
+            document.getElementById('set-bio-lock').checked = userSettings.bioLock;
+            document.getElementById('set-auto-backup').checked = userSettings.autoBackup;
             
-            // Search listener
-            document.getElementById('global-search').addEventListener('input', (e) => {
+            // Initial render
+            syncAllState();
+            
+            // Global Search Listener
+            const searchInput = document.getElementById('global-search');
+            searchInput.addEventListener('input', (e) => {
                 const q = e.target.value.toLowerCase();
-                if(q.length > 1) {
-                    nav('vault'); // Switch to vault to show results
+                if(q.length > 0) {
+                    if(document.getElementById('view-vault').classList.contains('hidden')) nav('vault');
                     renderVault(q);
-                } else if (q.length === 0) {
+                } else {
                     renderVault();
                 }
             });
         }
 
         function nav(viewId) {
-            // Hide all sections
             document.querySelectorAll('.view-section').forEach(sec => {
                 sec.classList.add('hidden');
                 sec.classList.remove('block', 'animate-fade-in');
             });
-            
-            // Show target
             const target = document.getElementById(`view-${viewId}`);
             if(target) {
                 target.classList.remove('hidden');
                 target.classList.add('block', 'animate-fade-in');
             }
 
-            // Update Nav styling (Desktop & Mobile)
             document.querySelectorAll('.nav-item').forEach(btn => {
                 const isTarget = btn.getAttribute('data-target') === viewId;
                 if(btn.closest('aside')) {
-                    // Desktop
-                    if(isTarget) {
-                        btn.className = 'nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left font-medium transition-colors bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400';
-                    } else {
-                        btn.className = 'nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors';
-                    }
+                    btn.className = isTarget ? 'nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left font-medium transition-colors bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400' 
+                                             : 'nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors';
                 } else {
-                    // Mobile
-                    if(isTarget) {
-                        btn.className = 'nav-item flex flex-col items-center justify-center w-16 h-full text-brand-600 dark:text-brand-400';
-                    } else {
-                        btn.className = 'nav-item flex flex-col items-center justify-center w-16 h-full text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors';
-                    }
+                    btn.className = isTarget ? 'nav-item flex flex-col items-center justify-center w-16 h-full text-brand-600 dark:text-brand-400' 
+                                             : 'nav-item flex flex-col items-center justify-center w-16 h-full text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors';
                 }
             });
         }
 
-        // Renders horizontal recent cards on dashboard
         function renderDashboard() {
-            // Categories Grid
+            // Categories
             const catContainer = document.getElementById('categories-container');
             catContainer.innerHTML = categories.map(cat => `
-                <button class="flex flex-col items-center p-3 md:p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
+                <button onclick="nav('vault'); filterVault('${cat.id}')" class="flex flex-col items-center p-3 md:p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
                     <div class="w-10 h-10 ${cat.bg} ${cat.color} rounded-full flex items-center justify-center mb-2">
                         <i class="ph ${cat.icon} text-xl"></i>
                     </div>
@@ -903,10 +1016,17 @@
                 </button>
             `).join('');
 
-            // Recent Docs
+            // Recent/Pinned
             const recentContainer = document.getElementById('recent-docs-container');
-            const recentDocs = documents.filter(d => d.pinned).slice(0, 5);
-            recentContainer.innerHTML = recentDocs.map(doc => {
+            // Sort by pinned first, then by date
+            let displayDocs = [...documents].sort((a, b) => b.pinned - a.pinned || new Date(b.date) - new Date(a.date)).slice(0, 8);
+            
+            if(displayDocs.length === 0) {
+                recentContainer.innerHTML = `<div class="p-4 text-sm text-gray-500 w-full text-center">No documents found. Start uploading!</div>`;
+                return;
+            }
+
+            recentContainer.innerHTML = displayDocs.map(doc => {
                 const cat = getCatDetails(doc.cat);
                 return `
                 <div onclick="openDoc('${doc.id}')" class="min-w-[160px] md:min-w-[200px] bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 cursor-pointer active:scale-95 transition-transform flex-shrink-0">
@@ -914,52 +1034,74 @@
                         <div class="w-10 h-10 ${cat.bg} ${cat.color} rounded-xl flex items-center justify-center">
                             <i class="ph ${cat.icon} text-xl"></i>
                         </div>
-                        <i class="ph ph-push-pin-fill text-brand-500 text-sm"></i>
+                        ${doc.pinned ? '<i class="ph ph-push-pin-fill text-brand-500 text-sm"></i>' : ''}
                     </div>
                     <h3 class="font-bold text-sm truncate mb-1">${doc.title}</h3>
-                    <p class="text-[10px] text-gray-500 flex items-center gap-1"><i class="${getFileIcon(doc.type)}"></i> ${doc.size}</p>
+                    <p class="text-[10px] text-gray-500 flex items-center gap-1"><i class="${getFileIcon(doc.type)}"></i> ${formatBytes(doc.size)}</p>
                 </div>
             `}).join('');
         }
 
-        // Renders vertical list in vault, supports search query
+        function filterVault(catId) {
+            activeVaultFilter = catId;
+            document.querySelectorAll('.vault-filter-btn').forEach(btn => {
+                if(btn.innerText.toLowerCase().includes(catId === 'all' ? 'all' : getCatDetails(catId).name.toLowerCase())) {
+                    btn.classList.add('bg-brand-600', 'text-white', 'border-brand-600');
+                    btn.classList.remove('bg-white', 'dark:bg-gray-800', 'text-gray-900', 'dark:text-white');
+                } else {
+                    btn.classList.remove('bg-brand-600', 'text-white', 'border-brand-600');
+                    btn.classList.add('bg-white', 'dark:bg-gray-800');
+                }
+            });
+            renderVault(document.getElementById('global-search').value);
+        }
+
         function renderVault(query = "") {
             const list = document.getElementById('vault-list-container');
-            
             let filtered = documents;
+
+            if (activeVaultFilter !== 'all') {
+                filtered = filtered.filter(d => d.cat === activeVaultFilter);
+            }
+
             if (query) {
-                filtered = documents.filter(d => 
-                    d.title.toLowerCase().includes(query) || 
-                    d.tags.some(t => t.toLowerCase().includes(query)) ||
-                    getCatDetails(d.cat).name.toLowerCase().includes(query) ||
-                    getOwnerDetails(d.owner).name.toLowerCase().includes(query)
+                const q = query.toLowerCase();
+                filtered = filtered.filter(d => 
+                    d.title.toLowerCase().includes(q) || 
+                    d.tags.some(t => t.toLowerCase().includes(q)) ||
+                    getCatDetails(d.cat).name.toLowerCase().includes(q) ||
+                    getOwnerDetails(d.owner).name.toLowerCase().includes(q)
                 );
             }
 
             if(filtered.length === 0) {
-                list.innerHTML = `<div class="text-center py-10 text-gray-500"><i class="ph ph-magnifying-glass text-4xl mb-2"></i><p>No documents found.</p></div>`;
+                list.innerHTML = `<div class="text-center py-10 text-gray-500"><i class="ph ph-magnifying-glass text-4xl mb-2"></i><p>No documents found matching criteria.</p></div>`;
                 return;
             }
+
+            // Sort newest first
+            filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
 
             list.innerHTML = filtered.map(doc => {
                 const cat = getCatDetails(doc.cat);
                 const owner = getOwnerDetails(doc.owner);
                 return `
                 <div onclick="openDoc('${doc.id}')" class="flex items-center gap-4 p-3 md:p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow cursor-pointer">
-                    <div class="w-12 h-12 ${cat.bg} ${cat.color} rounded-xl flex items-center justify-center flex-shrink-0">
+                    <div class="w-12 h-12 ${cat.bg} ${cat.color} rounded-xl flex items-center justify-center flex-shrink-0 relative">
                         <i class="ph ${cat.icon} text-2xl"></i>
+                        ${doc.pinned ? '<div class="absolute -top-1 -right-1 w-4 h-4 bg-brand-500 rounded-full flex items-center justify-center"><i class="ph ph-push-pin-fill text-[10px] text-white"></i></div>' : ''}
                     </div>
                     <div class="flex-1 min-w-0">
                         <h3 class="font-bold text-sm md:text-base truncate">${doc.title}</h3>
-                        <p class="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
-                            <span class="bg-gray-100 dark:bg-gray-700 px-1.5 rounded text-[10px]">${owner.relation}</span> • 
-                            ${doc.date}
+                        <p class="text-xs text-gray-500 flex items-center gap-1 mt-0.5 truncate">
+                            <span class="bg-gray-100 dark:bg-gray-700 px-1.5 rounded text-[10px] whitespace-nowrap">${owner.relation}</span> • 
+                            ${formatDate(doc.date)} • ${formatBytes(doc.size)}
                         </p>
                     </div>
                     <div class="flex items-center gap-2">
-                        ${doc.type === 'pdf' ? '<span class="text-[10px] font-bold text-red-500 border border-red-200 bg-red-50 px-1.5 py-0.5 rounded">PDF</span>' : ''}
-                        <button class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-white" onclick="event.stopPropagation(); shareMock('${doc.title}')">
-                            <i class="ph ph-dots-three-vertical text-xl"></i>
+                        ${doc.type.includes('pdf') ? '<span class="text-[10px] font-bold text-red-500 border border-red-200 bg-red-50 px-1.5 py-0.5 rounded">PDF</span>' : ''}
+                        <button class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-white" onclick="event.stopPropagation(); currentDoc = documents.find(d=>d.id==='${doc.id}'); shareCurrentDoc('system')">
+                            <i class="ph ph-share-network text-xl"></i>
                         </button>
                     </div>
                 </div>
@@ -968,23 +1110,47 @@
 
         function renderFamily() {
             const container = document.getElementById('family-container');
-            container.innerHTML = familyMembers.map(member => `
-                <div class="bg-white dark:bg-gray-800 p-5 rounded-3xl border border-gray-100 dark:border-gray-700 flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer">
-                    <img src="${member.img}" class="w-16 h-16 rounded-full border-2 border-brand-100 dark:border-gray-700">
-                    <div class="flex-1">
-                        <h3 class="font-bold text-lg">${member.name}</h3>
-                        <p class="text-sm text-gray-500">${member.relation} • ${member.docs} Docs</p>
+            
+            // Calculate document counts per member
+            const memberDocCounts = {};
+            documents.forEach(d => {
+                memberDocCounts[d.owner] = (memberDocCounts[d.owner] || 0) + 1;
+            });
+
+            container.innerHTML = familyMembers.map(member => {
+                const count = memberDocCounts[member.id] || 0;
+                // Don't show delete for self
+                const isSelf = member.id === 'self';
+                
+                return `
+                <div class="bg-white dark:bg-gray-800 p-5 rounded-3xl border border-gray-100 dark:border-gray-700 flex flex-col hover:shadow-md transition-shadow">
+                    <div class="flex items-center gap-4 mb-4">
+                        <img src="${member.img}" class="w-16 h-16 rounded-full border-2 border-brand-100 dark:border-gray-700 object-cover">
+                        <div class="flex-1">
+                            <h3 class="font-bold text-lg leading-tight">${member.name}</h3>
+                            <p class="text-sm text-gray-500 bg-gray-100 dark:bg-gray-900 inline-block px-2 py-0.5 rounded-full mt-1">${member.relation}</p>
+                        </div>
                     </div>
-                    <i class="ph ph-caret-right text-gray-400"></i>
+                    <div class="flex items-center justify-between mt-auto border-t border-gray-100 dark:border-gray-700 pt-3">
+                        <span class="text-sm font-bold text-brand-600 dark:text-brand-400">${count} Docs</span>
+                        <div class="flex gap-2">
+                            ${isSelf ? '' : `<button onclick="editFamilyMember('${member.id}')" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-200 transition-colors"><i class="ph ph-pencil-simple"></i></button>
+                            <button onclick="confirmDeleteFamily('${member.id}')" class="w-8 h-8 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center text-red-500 hover:bg-red-100 transition-colors"><i class="ph ph-trash"></i></button>`}
+                        </div>
+                    </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         function renderQuickShare() {
             const container = document.getElementById('quick-share-container');
-            // Only show ID proofs for quick share
-            const shareDocs = documents.filter(d => d.cat === 'id');
+            const shareDocs = documents.filter(d => d.cat === 'id' || d.tags.includes('gov'));
             
+            if(shareDocs.length === 0) {
+                 container.innerHTML = `<div class="col-span-1 md:col-span-2 text-center text-gray-500 py-10">Upload Identity documents to use Quick Share.</div>`;
+                 return;
+            }
+
             container.innerHTML = shareDocs.map(doc => {
                 const owner = getOwnerDetails(doc.owner);
                 return `
@@ -995,17 +1161,131 @@
                         </div>
                         <div class="min-w-0">
                             <h3 class="font-bold text-sm truncate">${doc.title}</h3>
-                            <p class="text-xs text-gray-500">${owner.name}</p>
+                            <p class="text-xs text-gray-500 truncate">${owner.name} • ${formatBytes(doc.size)}</p>
                         </div>
                     </div>
-                    <button onclick="shareMock('${doc.title}')" class="bg-green-500 hover:bg-green-600 text-white rounded-full p-3 shadow-lg shadow-green-500/30 flex-shrink-0 active:scale-90 transition-transform">
+                    <button onclick="currentDoc = documents.find(d=>d.id==='${doc.id}'); shareCurrentDoc('whatsapp')" class="bg-green-500 hover:bg-green-600 text-white rounded-full p-3 shadow-lg shadow-green-500/30 flex-shrink-0 active:scale-90 transition-transform">
                         <i class="ph ph-whatsapp-logo text-xl"></i>
                     </button>
                 </div>
             `}).join('');
         }
 
-        // --- MODAL & INTERACTIONS ---
+        // ==========================================
+        // 5. PROFILE & SETTINGS OPERATIONS
+        // ==========================================
+        
+        function updateProfileUI() {
+            const headerImg = document.getElementById('header-profile-img');
+            if(headerImg) headerImg.src = currentUser.avatar;
+            
+            const settingsImg = document.getElementById('settings-profile-img');
+            if(settingsImg) settingsImg.src = currentUser.avatar;
+            
+            document.getElementById('prof-name').value = currentUser.name || '';
+            document.getElementById('prof-email').value = currentUser.email || '';
+            document.getElementById('prof-phone').value = currentUser.phone || '';
+            document.getElementById('prof-dob').value = currentUser.dob || '';
+            document.getElementById('prof-address').value = currentUser.address || '';
+            document.getElementById('prof-profession').value = currentUser.profession || '';
+            
+            const dashGreeting = document.getElementById('dash-greeting');
+            if(dashGreeting) dashGreeting.innerText = `Good evening, ${currentUser.name.split(' ')[0]}`;
+            
+            document.getElementById('em-name-self').innerText = `${currentUser.name.split(' ')[0]} (Self)`;
+        }
+
+        function saveProfileData() {
+            currentUser.name = document.getElementById('prof-name').value;
+            currentUser.email = document.getElementById('prof-email').value;
+            currentUser.phone = document.getElementById('prof-phone').value;
+            currentUser.dob = document.getElementById('prof-dob').value;
+            currentUser.address = document.getElementById('prof-address').value;
+            currentUser.profession = document.getElementById('prof-profession').value;
+            
+            // Sync self in family array
+            const selfIndex = familyMembers.findIndex(m => m.id === 'self');
+            if(selfIndex > -1) {
+                familyMembers[selfIndex].name = currentUser.name;
+            }
+
+            syncAllState();
+            showToast('Profile Saved Successfully');
+        }
+
+        function uploadProfilePhoto(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                currentUser.avatar = e.target.result;
+                const selfIndex = familyMembers.findIndex(m => m.id === 'self');
+                if(selfIndex > -1) familyMembers[selfIndex].img = currentUser.avatar;
+                syncAllState();
+                showToast('Profile photo updated');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeProfilePhoto() {
+            currentUser.avatar = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(currentUser.name) + '&background=eef2ff&color=4f46e5';
+            const selfIndex = familyMembers.findIndex(m => m.id === 'self');
+            if(selfIndex > -1) familyMembers[selfIndex].img = currentUser.avatar;
+            syncAllState();
+            showToast('Profile photo removed');
+        }
+
+        function toggleSetting(key, val) {
+            userSettings[key] = val;
+            AppStorage.set('settings', userSettings);
+            showToast('Setting updated');
+        }
+
+        // ==========================================
+        // 6. DOCUMENT CRUD (UPLOAD, EDIT, DELETE)
+        // ==========================================
+
+        function handleFileUpload(event) {
+            const files = event.target.files;
+            if(!files || files.length === 0) return;
+
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const type = file.type || 'application/octet-stream';
+                    
+                    // Basic heuristic for categorization
+                    let cat = 'other';
+                    let tags = ['new'];
+                    const nameLower = file.name.toLowerCase();
+                    if(nameLower.includes('aadhaar') || nameLower.includes('pan') || nameLower.includes('passport')) { cat = 'id'; tags.push('gov'); }
+                    if(nameLower.includes('report') || nameLower.includes('health') || nameLower.includes('med')) cat = 'med';
+                    if(nameLower.includes('bill') || nameLower.includes('receipt')) { cat = 'other'; tags.push('utility'); }
+                    
+                    const newDoc = {
+                        id: 'doc_' + Date.now() + Math.random().toString(36).substr(2, 5),
+                        title: file.name.split('.')[0], // Strip extension
+                        cat: cat,
+                        owner: 'self',
+                        type: type,
+                        size: file.size,
+                        date: new Date().toISOString(),
+                        pinned: false,
+                        num: '',
+                        tags: tags,
+                        dataUrl: e.target.result // Store base64 securely in local storage
+                    };
+
+                    documents.push(newDoc);
+                    syncAllState();
+                    showToast(`${file.name} uploaded to Vault`);
+                };
+                reader.readAsDataURL(file);
+            });
+            // Reset input so same file can be selected again
+            event.target.value = '';
+            nav('vault');
+        }
 
         function openDoc(docId) {
             currentDoc = documents.find(d => d.id === docId);
@@ -1015,25 +1295,47 @@
             const owner = getOwnerDetails(currentDoc.owner);
 
             document.getElementById('modal-doc-title').innerText = currentDoc.title;
-            document.getElementById('modal-doc-meta').innerText = `${currentDoc.type.toUpperCase()} • ${currentDoc.size} • ${currentDoc.date}`;
+            document.getElementById('modal-doc-meta').innerText = `${currentDoc.type.split('/')[1] || currentDoc.type.toUpperCase()} • ${formatBytes(currentDoc.size)} • ${formatDate(currentDoc.date)}`;
             
             const iconDiv = document.getElementById('modal-doc-icon');
-            iconDiv.className = `w-10 h-10 rounded-lg flex items-center justify-center text-xl ${cat.bg} ${cat.color}`;
+            iconDiv.className = `w-10 h-10 rounded-lg flex items-center justify-center text-xl flex-shrink-0 ${cat.bg} ${cat.color}`;
             iconDiv.innerHTML = `<i class="ph ${cat.icon}"></i>`;
 
-            document.getElementById('modal-type').innerText = currentDoc.title.split('-')[0].trim();
+            document.getElementById('modal-type').innerText = currentDoc.type.includes('pdf') ? 'PDF Document' : 'Image File';
             document.getElementById('modal-owner-name').innerText = owner.name;
+            document.getElementById('modal-cat-name').innerText = cat.name;
             document.getElementById('modal-id-num').innerText = currentDoc.num || 'N/A';
 
             document.getElementById('modal-tags').innerHTML = currentDoc.tags.map(t => 
                 `<span class="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-[10px] rounded-full uppercase tracking-wider font-bold">#${t}</span>`
             ).join('');
 
+            // Update Pin Button visually
+            const pinBtn = document.getElementById('modal-pin-btn');
+            pinBtn.innerHTML = currentDoc.pinned ? `<i class="ph ph-push-pin-fill text-brand-500"></i>` : `<i class="ph ph-push-pin text-gray-400"></i>`;
+            if(currentDoc.pinned) {
+                pinBtn.classList.add('bg-brand-50', 'dark:bg-brand-900/30');
+            } else {
+                pinBtn.classList.remove('bg-brand-50', 'dark:bg-brand-900/30');
+            }
+
+            // Update Preview Area based on real dataUrl if exists
+            const prevIcon = document.getElementById('modal-preview-icon');
+            const prevImg = document.getElementById('modal-preview-img');
+            if (currentDoc.dataUrl && currentDoc.dataUrl.startsWith('data:image/')) {
+                prevIcon.classList.add('hidden');
+                prevImg.src = currentDoc.dataUrl;
+                prevImg.classList.remove('hidden');
+            } else {
+                prevImg.classList.add('hidden');
+                prevIcon.classList.remove('hidden');
+                prevIcon.className = `ph ph-file${currentDoc.type.includes('pdf')?'-pdf':''} text-6xl text-gray-300 dark:text-gray-600`;
+            }
+
             const modal = document.getElementById('doc-modal');
             const content = document.getElementById('doc-modal-content');
             
             modal.classList.remove('hidden');
-            // Trigger reflow
             void modal.offsetWidth;
             modal.classList.remove('opacity-0');
             
@@ -1055,33 +1357,99 @@
                 content.classList.add('translate-y-8');
             }
             
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                currentDoc = null;
-            }, 300);
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
         }
 
-        // Web Share API implementation
-        async function shareCurrentDoc() {
+        function togglePinCurrentDoc() {
             if(!currentDoc) return;
-            shareMock(currentDoc.title);
+            currentDoc.pinned = !currentDoc.pinned;
+            syncAllState();
+            
+            // Update UI instantly in modal
+            const pinBtn = document.getElementById('modal-pin-btn');
+            pinBtn.innerHTML = currentDoc.pinned ? `<i class="ph ph-push-pin-fill text-brand-500"></i>` : `<i class="ph ph-push-pin text-gray-400"></i>`;
+            showToast(currentDoc.pinned ? 'Document pinned' : 'Document unpinned');
         }
 
-        async function shareMock(title) {
+        function initiateDocRename() {
+            if(!currentDoc) return;
+            openInputModal('Rename Document', currentDoc.title, (newVal) => {
+                if(newVal && newVal.trim() !== "") {
+                    currentDoc.title = newVal.trim();
+                    document.getElementById('modal-doc-title').innerText = currentDoc.title;
+                    syncAllState();
+                    showToast('Document renamed');
+                }
+            });
+        }
+
+        function confirmDeleteDoc() {
+            if(!currentDoc) return;
+            openConfirmModal('Delete Document?', `Are you sure you want to delete "${currentDoc.title}"?`, () => {
+                documents = documents.filter(d => d.id !== currentDoc.id);
+                syncAllState();
+                closeDocModal();
+                showToast('Document deleted');
+            });
+        }
+
+        // ==========================================
+        // 7. FILE ACTIONS (Download, Print, Share)
+        // ==========================================
+
+        function downloadCurrentDoc() {
+            if(!currentDoc) return;
+            if(currentDoc.dataUrl) {
+                // Actual local file
+                const a = document.createElement('a');
+                a.href = currentDoc.dataUrl;
+                // guess extension
+                const ext = currentDoc.type.includes('pdf') ? '.pdf' : (currentDoc.type.includes('png') ? '.png' : '.jpg');
+                a.download = currentDoc.title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + ext;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                showToast('Download started');
+            } else {
+                // Mock demo file
+                showToast('Mock file downloaded');
+            }
+        }
+
+        function printCurrentDoc() {
+            if(!currentDoc) return;
+            if (currentDoc.dataUrl && currentDoc.dataUrl.startsWith('data:image/')) {
+                const win = window.open('');
+                win.document.write(`<img src="${currentDoc.dataUrl}" style="max-width:100%;">`);
+                win.document.close();
+                setTimeout(() => { win.print(); win.close(); }, 200);
+            } else {
+                showToast('Generating print view...');
+                setTimeout(() => window.print(), 500);
+            }
+        }
+
+        async function shareCurrentDoc(platform) {
+            if(!currentDoc) return;
+            if(platform === 'whatsapp') {
+                const text = encodeURIComponent(`I am sharing a document with you via DocNest: ${currentDoc.title}`);
+                window.open(`https://wa.me/?text=${text}`, '_blank');
+                return;
+            }
+            triggerWebShare(currentDoc.title, 'Securely shared document from DocNest vault.');
+        }
+
+        async function triggerWebShare(title, text) {
             if (navigator.share) {
                 try {
-                    await navigator.share({
-                        title: `DocNest: ${title}`,
-                        text: `Securely shared document from DocNest vault.`,
-                        // url not provided to simulate actual file blob sharing limitation in standard demo
-                    });
-                    showToast('Document Shared');
+                    await navigator.share({ title: `DocNest: ${title}`, text: text });
+                    showToast('Share complete');
                 } catch (err) {
                     console.log('Share cancelled', err);
                 }
             } else {
-                // Fallback
-                showToast(`Sharing ${title} via default method`);
+                showToast('Web Share API not supported on this browser. Falling back to download.');
+                if(currentDoc) downloadCurrentDoc();
             }
         }
 
@@ -1090,197 +1458,301 @@
             frame.classList.add('bg-white', 'opacity-100');
             setTimeout(() => {
                 frame.classList.remove('bg-white', 'opacity-100');
-                showToast('Document Scanned Successfully');
+                showToast('Camera feed simulated. Use "Upload" for real files.');
                 setTimeout(() => nav('dashboard'), 1000);
             }, 150);
         }
+
+        // ==========================================
+        // 8. FAMILY CRUD MODAL
+        // ==========================================
+
+        let editingFamilyId = null;
+
+        function openFamilyModal() {
+            editingFamilyId = null;
+            document.getElementById('family-modal-title').innerText = "Add Family Member";
+            document.getElementById('fam-mod-id').value = "";
+            document.getElementById('fam-mod-name').value = "";
+            document.getElementById('fam-mod-rel').value = "Spouse";
+            document.getElementById('fam-mod-img').src = "https://ui-avatars.com/api/?name=New+Member&background=eef2ff&color=4f46e5";
+            
+            toggleModalUI('family-modal', true);
+        }
+
+        function editFamilyMember(id) {
+            const member = familyMembers.find(m => m.id === id);
+            if(!member) return;
+            
+            editingFamilyId = id;
+            document.getElementById('family-modal-title').innerText = "Edit Family Member";
+            document.getElementById('fam-mod-id').value = member.id;
+            document.getElementById('fam-mod-name').value = member.name;
+            document.getElementById('fam-mod-rel').value = member.relation;
+            document.getElementById('fam-mod-img').src = member.img;
+            
+            toggleModalUI('family-modal', true);
+        }
+
+        function saveFamilyMember() {
+            const name = document.getElementById('fam-mod-name').value.trim();
+            const rel = document.getElementById('fam-mod-rel').value;
+            const img = document.getElementById('fam-mod-img').src;
+            
+            if(!name) { showToast('Name is required'); return; }
+
+            if(editingFamilyId) {
+                const index = familyMembers.findIndex(m => m.id === editingFamilyId);
+                familyMembers[index] = { ...familyMembers[index], name, relation: rel, img };
+                showToast('Member updated');
+            } else {
+                const newMember = { id: 'fam_' + Date.now(), name, relation: rel, img };
+                familyMembers.push(newMember);
+                showToast('Member added');
+            }
+            
+            syncAllState();
+            closeFamilyModal();
+        }
+
+        function confirmDeleteFamily(id) {
+            const member = familyMembers.find(m => m.id === id);
+            if(!member) return;
+            openConfirmModal('Remove Member?', `Remove ${member.name} from Family Vault? Associated documents will not be deleted but owner will reset to Self.`, () => {
+                // Re-assign documents to self
+                documents.forEach(d => { if(d.owner === id) d.owner = 'self'; });
+                // Delete member
+                familyMembers = familyMembers.filter(m => m.id !== id);
+                syncAllState();
+                showToast('Member removed');
+            });
+        }
+
+        function handleFamPhotoUpload(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('fam-mod-img').src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function closeFamilyModal() { toggleModalUI('family-modal', false); }
+
+        // ==========================================
+        // 9. GENERIC MODALS (INPUT & CONFIRM)
+        // ==========================================
+
+        let inputConfirmCallback = null;
+        function openInputModal(title, defaultVal, callback) {
+            document.getElementById('input-modal-title').innerText = title;
+            document.getElementById('input-modal-field').value = defaultVal;
+            inputConfirmCallback = callback;
+            
+            const m = document.getElementById('input-modal');
+            m.classList.remove('hidden');
+            void m.offsetWidth;
+            m.classList.remove('opacity-0');
+            document.getElementById('input-modal-content').classList.remove('scale-95');
+        }
+
+        function closeInputModal() {
+            const m = document.getElementById('input-modal');
+            m.classList.add('opacity-0');
+            document.getElementById('input-modal-content').classList.add('scale-95');
+            setTimeout(() => m.classList.add('hidden'), 200);
+            inputConfirmCallback = null;
+        }
+
+        document.getElementById('input-modal-confirm').addEventListener('click', () => {
+            if(inputConfirmCallback) inputConfirmCallback(document.getElementById('input-modal-field').value);
+            closeInputModal();
+        });
+
+
+        let confirmCallback = null;
+        function openConfirmModal(title, msg, callback) {
+            document.getElementById('confirm-modal-title').innerText = title;
+            document.getElementById('confirm-modal-msg').innerText = msg;
+            confirmCallback = callback;
+            
+            const m = document.getElementById('confirm-modal');
+            m.classList.remove('hidden');
+            void m.offsetWidth;
+            m.classList.remove('opacity-0');
+            document.getElementById('confirm-modal-content').classList.remove('scale-95');
+        }
+
+        function closeConfirmModal() {
+            const m = document.getElementById('confirm-modal');
+            m.classList.add('opacity-0');
+            document.getElementById('confirm-modal-content').classList.add('scale-95');
+            setTimeout(() => m.classList.add('hidden'), 200);
+            confirmCallback = null;
+        }
+
+        document.getElementById('confirm-modal-btn').addEventListener('click', () => {
+            if(confirmCallback) confirmCallback();
+            closeConfirmModal();
+        });
+
+        function toggleModalUI(id, show) {
+            const modal = document.getElementById(id);
+            const content = document.getElementById(id+'-content');
+            if(show) {
+                modal.classList.remove('hidden');
+                void modal.offsetWidth;
+                modal.classList.remove('opacity-0');
+                if(window.innerWidth < 768) content.classList.remove('translate-y-full');
+                else content.classList.remove('translate-y-8');
+            } else {
+                modal.classList.add('opacity-0');
+                if(window.innerWidth < 768) content.classList.add('translate-y-full');
+                else content.classList.add('translate-y-8');
+                setTimeout(() => { modal.classList.add('hidden'); }, 300);
+            }
+        }
+
+        // ==========================================
+        // 10. BACKUP, EXPORT & STORAGE METRICS
+        // ==========================================
+
+        function updateStorageStats() {
+            // LocalStorage has rough 5MB limit. We simulate a 50MB quota for visual effect in local demo.
+            const QUOTA_BYTES = 50 * 1024 * 1024; 
+            
+            // Calculate real size used by documents array strings
+            let totalBytes = 0;
+            let pdfBytes = 0;
+            let imgBytes = 0;
+            let otherBytes = 0;
+
+            documents.forEach(d => {
+                const s = d.size || 0;
+                totalBytes += s;
+                if(d.type.includes('pdf')) pdfBytes += s;
+                else if(d.type.includes('image') || ['jpg','jpeg','png'].includes(d.type)) imgBytes += s;
+                else otherBytes += s;
+            });
+
+            // If local sizes exceed simulated quota (rare unless user uploads 50MB of base64), cap it visually.
+            let usedBytes = totalBytes;
+            let freeBytes = Math.max(0, QUOTA_BYTES - usedBytes);
+            
+            const usedStr = formatBytes(usedBytes).split(' ');
+            document.getElementById('storage-used-main').innerText = usedStr[0];
+            document.getElementById('storage-used-main').nextElementSibling.innerText = usedStr[1];
+            document.getElementById('storage-used-sidebar').innerText = formatBytes(usedBytes);
+            
+            document.getElementById('storage-free-main').innerText = formatBytes(freeBytes) + ' Free';
+            document.getElementById('stat-free').innerText = formatBytes(freeBytes);
+            
+            document.getElementById('stat-pdf').innerText = formatBytes(pdfBytes);
+            document.getElementById('stat-img').innerText = formatBytes(imgBytes);
+            document.getElementById('stat-other').innerText = formatBytes(otherBytes);
+
+            const totalSim = Math.max(usedBytes, QUOTA_BYTES); // avoid division by zero
+            const pPdf = (pdfBytes / totalSim) * 100;
+            const pImg = (imgBytes / totalSim) * 100;
+            const pOth = (otherBytes / totalSim) * 100;
+
+            document.getElementById('storage-bar-pdf').style.width = pPdf + '%';
+            document.getElementById('storage-bar-img').style.width = pImg + '%';
+            document.getElementById('storage-bar-other').style.width = pOth + '%';
+            
+            // Sidebar simple combined
+            document.getElementById('storage-bar-sidebar').style.width = ((usedBytes / totalSim) * 100) + '%';
+        }
+
+        function executeBackup() {
+            const dataDump = { user: currentUser, family: familyMembers, docs: documents, settings: userSettings, timestamp: new Date().toISOString() };
+            // Simulate API call to GAS
+            DocNestSettings.syncBackup(dataDump).then(res => {
+                showToast('Cloud Sync Completed');
+                document.getElementById('last-backup-text').innerText = 'Last backup: Just now';
+            });
+        }
+
+        function executeRestore() {
+            showToast('Simulating restore from GAS...');
+            setTimeout(() => { showToast('Restore complete (No changes in demo mode)'); }, 1500);
+        }
+
+        function exportData(format) {
+            if(format === 'pdf') {
+                showToast('Generating Bulk PDF... (Requires backend)');
+                return;
+            }
+            
+            // ZIP/JSON Export
+            const dataDump = { user: currentUser, family: familyMembers, docs: documents, settings: userSettings, timestamp: new Date().toISOString() };
+            const blob = new Blob([JSON.stringify(dataDump, null, 2)], {type: 'application/json'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `DocNest_Backup_${new Date().getTime()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            showToast('Backup JSON Exported');
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if(data.user && data.docs) {
+                        currentUser = data.user;
+                        familyMembers = data.family || defaultFamilyMembers;
+                        documents = data.docs;
+                        userSettings = data.settings || defaultSettings;
+                        syncAllState();
+                        showToast('Backup restored successfully!');
+                    } else { throw new Error('Invalid format'); }
+                } catch(err) {
+                    showToast('Failed to parse backup file.');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // ==========================================
+        // 11. UTILITIES
+        // ==========================================
 
         function showToast(msg) {
             const toast = document.getElementById('toast');
             document.getElementById('toast-msg').innerText = msg;
             toast.classList.remove('-translate-y-20', 'opacity-0');
             toast.classList.add('translate-y-0', 'opacity-100');
-            
             setTimeout(() => {
                 toast.classList.remove('translate-y-0', 'opacity-100');
                 toast.classList.add('-translate-y-20', 'opacity-0');
             }, 3000);
         }
 
-        function toggleTheme() {
-            document.documentElement.classList.toggle('dark');
-        }
-
-        // Determine initial theme based on system preference
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            document.documentElement.classList.add('dark');
-        }
-
-        // --- EXTENDED SETTINGS & PROFILE LOGIC ---
-
-        function updateProfileUI() {
-            // Update Headers
-            const headerImg = document.getElementById('header-profile-img');
-            if(headerImg) headerImg.src = currentUser.avatar;
-            
-            // Update Settings View Elements
-            const settingsImg = document.getElementById('settings-profile-img');
-            if(settingsImg) settingsImg.src = currentUser.avatar;
-            
-            document.getElementById('prof-name').value = currentUser.name;
-            document.getElementById('prof-email').value = currentUser.email;
-            document.getElementById('prof-phone').value = currentUser.phone;
-            document.getElementById('prof-dob').value = currentUser.dob;
-            document.getElementById('prof-address').value = currentUser.address;
-            document.getElementById('prof-profession').value = currentUser.profession;
-            
-            // Update Dashboard Greeting
-            const dashGreeting = document.querySelector('#view-dashboard h1');
-            if(dashGreeting) dashGreeting.innerText = `Good evening, ${currentUser.name.split(' ')[0]}`;
-        }
-
-        function saveProfileData() {
-            currentUser.name = document.getElementById('prof-name').value;
-            currentUser.email = document.getElementById('prof-email').value;
-            currentUser.phone = document.getElementById('prof-phone').value;
-            currentUser.dob = document.getElementById('prof-dob').value;
-            currentUser.address = document.getElementById('prof-address').value;
-            currentUser.profession = document.getElementById('prof-profession').value;
-            saveUserData();
-            showToast('Profile Saved Successfully');
-        }
-
-        function uploadProfilePhoto(event) {
-            const file = event.target.files[0];
-            if(!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                currentUser.avatar = e.target.result;
-                saveUserData();
-                showToast('Profile photo updated');
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function removeProfilePhoto() {
-            // Fallback generic avatar
-            currentUser.avatar = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(currentUser.name) + '&background=eef2ff&color=4f46e5';
-            saveUserData();
-            showToast('Profile photo removed');
-        }
-
-        function initiatePinChange() {
-            const pinScreen = document.getElementById('auth-screen');
-            const title = pinScreen.querySelector('h1');
-            const sub = pinScreen.querySelector('p');
-            
-            title.innerText = "Enter New PIN";
-            sub.innerText = "Set a new 4-digit access code";
-            
-            isChangingPin = true;
-            pinInput = "";
-            updatePinUI();
-            
-            pinScreen.classList.remove('hidden');
-            pinScreen.style.opacity = '1';
-        }
+        function toggleTheme() { document.documentElement.classList.toggle('dark'); }
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) { document.documentElement.classList.add('dark'); }
 
         // ==========================================
-        // MODULE ARCHITECTURE: config.js (Simulated for Single File)
-        // Prepared strictly for future Google Apps Script integration
+        // 12. PWA SETUP
         // ==========================================
-        const DocNestConfig = {
-            apiEndpoint: 'https://script.google.com/macros/s/YOUR_GAS_ID/exec',
-            environment: 'production',
-            version: '1.2.0',
-            headers: { 'Content-Type': 'application/json' }
-        };
-
-        // ==========================================
-        // MODULE ARCHITECTURE: api.js (Simulated for Single File)
-        // Architecture mapped out, uses async fetch ready for deployment
-        // ==========================================
-        const DocNestAPI = {
-            async fetchGAS(action, payload = {}) {
-                try {
-                    // Production ready wrapper for Google Apps Script
-                    // const response = await fetch(`${DocNestConfig.apiEndpoint}?action=${action}`, {
-                    //     method: 'POST',
-                    //     body: JSON.stringify(payload)
-                    // });
-                    // return await response.json();
-                    console.log(`[API MOCK] ${action} called with`, payload);
-                    return { success: true, data: {} }; 
-                } catch (error) {
-                    console.error('[API Error]', error);
-                    return { success: false, error };
-                }
-            },
-            
-            async login(pin) { return this.fetchGAS('login', { pin }); },
-            async getProfile() { return this.fetchGAS('getProfile'); },
-            async updateProfile(profileData) { return this.fetchGAS('updateProfile', profileData); },
-            async changePin(oldPin, newPin) { return this.fetchGAS('changePin', { oldPin, newPin }); },
-            async uploadProfilePhoto(base64Image) { return this.fetchGAS('uploadProfilePhoto', { image: base64Image }); },
-            
-            async backup(localState) { return this.fetchGAS('backup', { data: localState }); },
-            async restore() { return this.fetchGAS('restore'); },
-            
-            async uploadDocument(doc) { return this.fetchGAS('uploadDocument', doc); },
-            async deleteDocument(docId) { return this.fetchGAS('deleteDocument', { docId }); },
-            async renameDocument(docId, newName) { return this.fetchGAS('renameDocument', { docId, newName }); },
-            async searchDocuments(query) { return this.fetchGAS('searchDocuments', { query }); },
-            
-            async getFamily() { return this.fetchGAS('getFamily'); },
-            async addFamily(member) { return this.fetchGAS('addFamily', member); },
-            async updateFamily(memberId, details) { return this.fetchGAS('updateFamily', { memberId, details }); },
-            async deleteFamily(memberId) { return this.fetchGAS('deleteFamily', { memberId }); }
-        };
-
-        // --- PWA SETUP (Dynamically Injected to meet single-file mandate) ---
         (function setupPWA() {
-            // 1. Generate Manifest Blob
             const manifestObj = {
-                name: "DocNest Vault",
-                short_name: "DocNest",
-                description: "Your Personal & Family Digital Document Vault",
-                start_url: "./",
-                display: "standalone",
-                background_color: "#ffffff",
-                theme_color: "#4f46e5",
-                icons: [
-                    {
-                        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Crect width='256' height='256' fill='%234f46e5' rx='60'/%3E%3Cpath d='M192,88H64a16,16,0,0,0-16,16v80a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V104A16,16,0,0,0,192,88ZM160,56H96a8,8,0,0,1,0-16h64a8,8,0,0,1,0,16Z' fill='white'/%3E%3C/svg%3E",
-                        sizes: "192x192",
-                        type: "image/svg+xml"
-                    }
-                ]
+                name: "DocNest Vault", short_name: "DocNest", description: "Your Personal & Family Digital Document Vault",
+                start_url: "./", display: "standalone", background_color: "#ffffff", theme_color: "#4f46e5",
+                icons: [{ src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Crect width='256' height='256' fill='%234f46e5' rx='60'/%3E%3Cpath d='M192,88H64a16,16,0,0,0-16,16v80a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V104A16,16,0,0,0,192,88ZM160,56H96a8,8,0,0,1,0-16h64a8,8,0,0,1,0,16Z' fill='white'/%3E%3C/svg%3E", sizes: "192x192", type: "image/svg+xml" }]
             };
-            const manifestBlob = new Blob([JSON.stringify(manifestObj)], {type: 'application/json'});
-            const manifestURL = URL.createObjectURL(manifestBlob);
-            const link = document.createElement('link');
-            link.rel = 'manifest';
-            link.href = manifestURL;
+            const link = document.createElement('link'); link.rel = 'manifest';
+            link.href = URL.createObjectURL(new Blob([JSON.stringify(manifestObj)], {type: 'application/json'}));
             document.head.appendChild(link);
 
-            // 2. Generate Service Worker Blob
-            const swCode = `
-                const CACHE_NAME = 'docnest-v1';
-                self.addEventListener('install', e => {
-                    self.skipWaiting();
-                });
-                self.addEventListener('fetch', e => {
-                    // Cache logic would go here for production offline capability
-                    e.respondWith(fetch(e.request).catch(() => new Response('Offline Mode Active')));
-                });
-            `;
-            const swBlob = new Blob([swCode], {type: 'application/javascript'});
-            const swURL = URL.createObjectURL(swBlob);
-
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register(swURL).catch(err => console.log('SW registration failed', err));
-            }
+            const swCode = `const CACHE_NAME = 'docnest-v1'; self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response('Offline Mode Active'))));`;
+            if ('serviceWorker' in navigator) navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode], {type: 'application/javascript'}))).catch(err => console.log('SW registration failed'));
         })();
         
     </script>
